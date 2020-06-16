@@ -6,15 +6,31 @@ using System.Text.RegularExpressions;
 
 namespace HConfigs
 {
+    /// <summary>
+    /// Used to mark a class as a config
+    /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
     public class Config : Attribute
     {
+        /// <summary>
+        /// The name of the file in which this Config should be saved
+        /// </summary>
         public string File { get; }
 
+        /// <summary>
+        /// Header text for this config. Use this to explain the purpose of the config in-file.
+        /// </summary>
         public string Header { get; set; }
 
+        /// <summary>
+        /// If set to true, all properties in this class will be interpreted as config options, even if it is not marked with Config.Option
+        /// </summary>
         public bool UseAllProperties { get; set; }
 
+        /// <summary>
+        /// Mark this class as a config
+        /// </summary>
+        /// <param name="path">The name of the file in which this Config should be saved</param>
         public Config(string path)
         {
             File = path;
@@ -53,6 +69,11 @@ namespace HConfigs
 
         private const string _allowedCharacters = "[a-zA-Z0-9_ ]+";
 
+        /// <summary>
+        /// Retrieves the Config attribute for a given type. Throws a ConfigException is the specified type is not marked as a config.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns>The Config attribute associated with the given type</returns>
         public static Config GetAttribute<T>()
         {
             object[] cfgAttr = typeof(T).GetCustomAttributes(typeof(Config), true);
@@ -62,6 +83,12 @@ namespace HConfigs
             return (Config)cfgAttr[0];
         }
 
+        /// <summary>
+        /// Serializes a config 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="config">The config object to serialize</param>
+        /// <returns>An array of lines that make up the config file text</returns>
         public static string[] Serialize<T>(T config)
         {
             Config configAttribute = GetAttribute<T>();
@@ -146,11 +173,23 @@ namespace HConfigs
 
         }
 
+        /// <summary>
+        /// Saves a config
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="config">The config object to be saved</param>
+        /// <param name="path">An optional path header to be prepended to the config's file name</param>
         public static void Save<T>(T config, string path = "")
         {
             System.IO.File.WriteAllLines(path + GetAttribute<T>(), Serialize(config));
         }
 
+        /// <summary>
+        /// Converts a config file text to the a config object of the specified type.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="lines">The lines of the config file to be converted</param>
+        /// <returns>The converted config object</returns>
         public static T Parse<T>(IEnumerable<string> lines) where T : new()
         {
             T config = (T)Activator.CreateInstance(typeof(T));
@@ -225,6 +264,12 @@ namespace HConfigs
             return config;
         }
 
+        /// <summary>
+        /// Loads a config
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="path">An optional path header to be prepended to the config type's file name</param>
+        /// <returns>The config object representation of the config file</returns>
         public static T Load<T>(string path = "") where T : new()
         {
             Config configAttribute = GetAttribute<T>();
@@ -232,20 +277,47 @@ namespace HConfigs
         }
 
         //Sub-attributes
+        /// <summary>
+        /// Marks a property of a config class as a config option
+        /// </summary>
         [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
         public class Option : Attribute
         {
+            /// <summary>
+            /// The name of this option. If not specified, the property name will be used.
+            /// </summary>
             public string Name { get; set; } = null;
+
+            /// <summary>
+            /// An optional comment describing the option
+            /// </summary>
             public string Comment { get; set; } = null;
+
+            /// <summary>
+            /// The region in which the option should be placed in the file, for oganizational purposes. If not specified, the option is placed in the default region at the top of the file.
+            /// </summary>
             public string Region { get; set; } = "";
         }
 
+        /// <summary>
+        /// Used to add free floating text to a comment file, at the beginning or immediately follwoing the start of a region.
+        /// </summary>
         [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
         public class Comment : Attribute
         {
+            /// <summary>
+            /// The text of the comment
+            /// </summary>
             public string Text { get; }
+            /// <summary>
+            /// The region the comment should be placed under. If not specified, the comment is placed beneath the header.
+            /// </summary>
             public string Region { get; set; } = "";
 
+            /// <summary>
+            /// Add a comment to this config
+            /// </summary>
+            /// <param name="comment">The text of the comment</param>
             public Comment(string comment)
             {
                 Text = comment;
